@@ -22,14 +22,14 @@ class socket_control:
     def is_connected(self):
         return self.status == connection_status.connected
 
-    def connect(self, Mode = 'TCP'):
-        if Mode == 'TCP' :
-            print('IP = {} and port = {}'.format(self.ip_addr, self.port))
-            self._socket = socket.create_connection([self.ip_addr, self.port], timeout = 3)
-            self.status = connection_status.connected
-        else:
-            self._socket = socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self._socket.settimeout(3)
+    def connect(self)#, Mode = 'TCP'):
+        # if Mode == 'TCP' :
+        print('IP = {} and port = {}'.format(self.ip_addr, self.port))
+        self._socket = socket.create_connection([self.ip_addr, self.port], timeout = 3)
+        self.status = connection_status.connected
+        # else:
+        #     self._socket = socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #     self._socket.settimeout(3)
         
     def close(self):
         try:
