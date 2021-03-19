@@ -8,6 +8,7 @@ import enum
 
 version = sys.version_info[0]
 
+
 class socket_control:
     def __init__(self, iAddr, iPort = 5025):
         self.ip_addr = iAddr
@@ -22,14 +23,18 @@ class socket_control:
     def is_connected(self):
         return self.status == connection_status.connected
 
-    def connect(self)#, Mode = 'TCP'):
-        # if Mode == 'TCP' :
+    def connect(self):
         print('IP = {} and port = {}'.format(self.ip_addr, self.port))
-        self._socket = socket.create_connection([self.ip_addr, self.port], timeout = 3)
-        self.status = connection_status.connected
-        # else:
-        #     self._socket = socket(socket.AF_INET, socket.SOCK_DGRAM)
-        #     self._socket.settimeout(3)
+        try:
+            self._socket = socket.create_connection([self.ip_addr, self.port], timeout = 3)
+            self.status = connection_status.connected
+            return self.status
+            # return connection_strings[self.status]
+        except socket.timeout :
+            self.status = connection_status.timeout
+            return self.status
+            # return connection_strings[self.status]
+
         
     def close(self):
         try:
@@ -97,10 +102,14 @@ class socket_control:
                 try:
                     byte_string = self._socket.recv(MaxBytes)
                 except socket.timeout as stex:
-                    byte_string = b'socket timeout'
+                    self.status = connection_status.timeout
+                    return self.status
+                    # byte_string = b'socket timeout'
                 except ConnectionResetError:
                     self.close()
-                    byte_string = b'connection reset'
+                    self.status = connection_status.connection_reset
+                    return self.status
+                    # byte_string = b'connection reset'
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
                 return String
@@ -108,14 +117,20 @@ class socket_control:
                 try:
                     byte_string = self._socket.recv(MaxBytes)
                 except socket.timeout as stex:
-                    byte_string = b'socket timeout'
+                    self.status = connection_status.timeout
+                    return self.status
+                    # byte_string = b'socket timeout'
                 except ConnectionResetError:
                     self.close()
-                    byte_string = b'connection reset'
+                    self.status = connection_status.connection_reset
+                    return self.status
+                    # byte_string = b'connection reset'
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
                 return String
-        return 'Not Connected'
+        self.status = connection_status.closed
+        return self.status
+        # return 'Not Connected'
 
     def receive_comm_layer(self, MaxBytes=2048):
         if self.is_connected:
@@ -125,10 +140,13 @@ class socket_control:
                     seq_num = int.from_bytes(self._sock.recv(4), 'little')
                     byte_string = self._socket.recv(message_len)
                 except socket.timeout as stex:
-                    byte_string = b'-1'
+                    self.status = connection_status.timeout
+                    return self.status
+                    # byte_string = b'socket timeout'
                 except ConnectionResetError:
                     self.close()
-                    byte_string = b'-1'
+                    self.status = connection_status.connection_reset
+                    return self.status
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
                 return String
@@ -136,42 +154,59 @@ class socket_control:
                 try:
                     byte_string = self._socket.recv(MaxBytes)
                 except socket.timeout as stex:
-                    byte_string = b'-1'
+                    self.status = connection_status.timeout
+                    return self.status
                 except ConnectionResetError:
                     self.close()
-                    byte_string = b'-1'
+                    self.status = connection_status.connection_reset
+                    return self.status
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
                 return String
-        return 'Not Connected'
+        self.status = connection_status.closed
+        return self.status
 
     def print_hex(self, string):
         tempString = ":".join('{:02x}'.format(ord(c)) for c in string)
-        print(tempString)
+        print(tempString)        
 
 
 class connection_status(enum.Enum):
-    idle = 1
-    connecting = 2
-    connected = 3
-    canceled = 4
-    closed = 5
-    timeout = 6
-    socket_error = 7
-    bad_port = 8
+    idle = 'Idle'
+    connecting = 'Connecting'
+    connected = 'Connected'
+    canceled = 'Canceled'
+    closed = 'Closed'
+    timeout = 'Timeout'
+    socket_error = 'Socket Error'
+    bad_port = 'Bad Port',
+    connection_reset = 'Connection Reset'
+
+# connection_strings = dict(
+#     1 = "Idle",
+#     2 = 'Connecting',
+#     3 = 'Connected',
+#     4 = 'Canceled',
+#     5 = 'Closed',
+#     6 = 'Socket Timeout',
+#     7 = 'Socket Error',
+#     8 = 'Bad Port'
+# )
+
+
 
 
 
 if __name__ == "__main__":
     # test = socket_control('169.254.208.100', 5025)
-    test = socket_control('192.168.68.115', 5025)
+    test = socket_control('169.254.208.100', 5025)
     print(test.is_connected)
 
     try:
         test.connect()
         sleep(0.5)
         print(test.is_connected)
-        print(test.send('help?'))
+        print(test.send('*idn?'))
         sleep(1)
 
     finally:
