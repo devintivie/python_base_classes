@@ -6,6 +6,9 @@ from time import sleep
 import time
 import enum
 
+
+import ping
+
 version = sys.version_info[0]
 
 
@@ -53,12 +56,16 @@ class socket_control:
 
         if self.is_connected :
             if version == 3 :
-                # try:
-                self._socket.send(byte_string)
-                # except socket.timeout as stex:
-                #     self.close()
-                #     self.connection_status = connection_status.timeout
-                #     return stex.strerror
+                try:
+                    self._socket.send(byte_string)
+                except socket.timeout as stex:
+                    self.close()
+                    self.connection_status = connection_status.timeout
+                    return stex.strerror
+                except ConnectionResetError:
+                    self.close()
+                    self.connection_status = connection_status.connection_reset
+                    return self.connection_status.value
                 sleep(delay)
                 return self.receive()
             else:
@@ -179,7 +186,17 @@ class socket_control:
 
     def print_hex(self, string):
         tempString = ":".join('{:02x}'.format(ord(c)) for c in string)
-        print(tempString)        
+        print(tempString)     
+
+    def ping_check(self):
+        if ping.ping_check(self.ip_address):
+            self.IsConnectionProblem = False
+            self.connection_status = connection_status.connecting
+            return 1
+        else:
+            self.IsConnectionProblem = True
+            self.connection_status = connection_status.ping_failed
+            return 0    
 
 
 class connection_status(enum.Enum):
@@ -193,6 +210,7 @@ class connection_status(enum.Enum):
     bad_port = 'Bad Port',
     connection_reset = 'Connection Reset'
     refused = 'Connection Refused'
+    ping_failed = 'Ping Failed'
     
 
 # connection_strings = dict(
