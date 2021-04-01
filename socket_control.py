@@ -230,16 +230,18 @@ class connection_status(enum.Enum):
 
 if __name__ == "__main__":
     # test = socket_control('169.254.208.100', 5025)
-    test = socket_control('151.1.1.5', 23)
+    test = socket_control('169.254.208.101', 5025)
+    # test = socket_control('192.168.68.109', 5025)
     print(test.is_connected)
 
     try:
         test.connect()
         sleep(0.5)
         print(test.is_connected)
+        # test.send('syst:ip 169.254.208.101')
         print(test.send('STS?'))
-        print(test.send('STS?'))
-        sleep(1)
+        # print(test.send('STS?'))
+        sleep(3)
 
     finally:
         test.close()
