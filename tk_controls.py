@@ -10,7 +10,6 @@ def base_font(style = 'bold'):
     fontStyle = style
     return [fontType, fontSize, fontStyle]
 
-
 '''LED CLass
     Led class using canvas and drawing circles.
 '''
