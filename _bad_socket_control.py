@@ -6,6 +6,7 @@ from time import sleep
 import time
 import enum
 
+import threading
 
 import ping
 
@@ -18,6 +19,7 @@ class socket_control:
         self.port = iPort
         self.connection_status = connection_status.idle
         self.seq_num = 0
+#        self.lock = threading.Lock()
         
     def __del__(self):
         self.close()
@@ -25,16 +27,13 @@ class socket_control:
     @property
     def is_connected(self):
         return self.connection_status == connection_status.connected
-    
-    @property
-    def is_busy(self):
-        return self.activity.is_alive()
 
     def connect(self):
         print('IP = {} and port = {}'.format(self.ip_address, self.port))
         try:
             self._socket = socket.create_connection([self.ip_address, self.port], timeout = 3)
             self.connection_status = connection_status.connected
+            print('connection successful')
             return self.connection_status.value
             # return connection_strings[self.connection_status]
         except socket.timeout :
@@ -54,40 +53,37 @@ class socket_control:
         finally:
             self.connection_status = connection_status.closed
         
-    def send(self, String, toLog = False, delay = 0, receive = True):
+        
+    def send(self, String, toLog = False, delay = 0):
         byte_string = bytes(String, encoding = 'utf-8')
-#        print(f'[send debug] command={String} : receive = {receive}')
+
         if self.is_connected :
+#            self.lock.acquire()
             if version == 3 :
                 try:
                     self._socket.send(byte_string)
                 except socket.timeout as stex:
                     self.close()
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return stex.strerror
                 except ConnectionResetError:
                     self.close()
                     self.connection_status = connection_status.connection_reset
+#                    self.lock.release()
                     return self.connection_status.value
                 sleep(delay)
-                
-                if receive:
-#                    print(f'[send debug] if receive = {receive}')
-                    return self.receive()
-                else:
-                    return 'no receive'
+                return self.receive()
             else:
                 try:
                     self._socket.send(String)
                 except socket.timeout as stex:
                     self.close()
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return stex.strerror
                 sleep(delay)
-                if receive:
-                    return self.receive()
-                else:
-                    return 'no receive'
+                return self.receive()
 
         self.connection_status = connection_status.closed
         return self.connection_status.value
@@ -107,6 +103,7 @@ class socket_control:
                 except socket.timeout as stex:
                     self.close()
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return stex.strerror
                 sleep(delay)
                 return self.receive()
@@ -118,9 +115,10 @@ class socket_control:
                 except socket.timeout as stex:
                     self.close()
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return stex.strerror
                 sleep(delay)
-                return self.receive()
+                return self.receive_comm_layer()
         self.connection_status = connection_status.closed
         return self.connection_status.value
         # return 'Not Connected'
@@ -132,32 +130,39 @@ class socket_control:
                     byte_string = self._socket.recv(MaxBytes)
                 except socket.timeout as stex:
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return self.connection_status.value
                     # byte_string = b'socket timeout'
                 except ConnectionResetError:
                     self.close()
                     self.connection_status = connection_status.connection_reset
+#                    self.lock.release()
                     return self.connection_status.value
                     # byte_string = b'connection reset'
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
+#                self.lock.release()
                 return String
             else:
                 try:
                     byte_string = self._socket.recv(MaxBytes)
                 except socket.timeout as stex:
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return self.connection_status.value
                     # byte_string = b'socket timeout'
                 except ConnectionResetError:
                     self.close()
                     self.connection_status = connection_status.connection_reset
+#                    self.lock.release()
                     return self.connection_status.value
                     # byte_string = b'connection reset'
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
+#                self.lock.release()
                 return String
         self.connection_status = connection_status.closed
+#        self.lock.release()
         return self.connection_status.value
         # return 'Not Connected'
 
@@ -170,29 +175,36 @@ class socket_control:
                     byte_string = self._socket.recv(message_len)
                 except socket.timeout as stex:
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return self.connection_status.value
                     # byte_string = b'socket timeout'
                 except ConnectionResetError:
                     self.close()
                     self.connection_status = connection_status.connection_reset
+#                    self.lock.release()
                     return self.connection_status.value
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
+#                self.lock.release()
                 return String
             else:
                 try:
                     byte_string = self._socket.recv(MaxBytes)
                 except socket.timeout as stex:
                     self.connection_status = connection_status.timeout
+#                    self.lock.release()
                     return self.connection_status
                 except ConnectionResetError:
                     self.close()
                     self.connection_status = connection_status.connection_reset
+#                    self.lock.release()
                     return self.connection_status
                 String = str(byte_string, encoding='utf-8')
                 String = String.replace('\r','').replace('\n', '')
+#                self.lock.release()
                 return String
         self.connection_status = connection_status.closed
+#        self.lock.release()
         return self.connection_status.value
 
     def print_hex(self, string):
@@ -203,10 +215,13 @@ class socket_control:
         if ping.ping_check(self.ip_address):
             self.IsConnectionProblem = False
             self.connection_status = connection_status.connecting
+#            print(f'inside ping_check fail = {self.connection_status}')
+
             return 1
         else:
             self.IsConnectionProblem = True
             self.connection_status = connection_status.ping_failed
+#            print(f'inside ping_check fail = {self.connection_status}')
             return 0    
 
 
@@ -240,9 +255,9 @@ class connection_status(enum.Enum):
 
 
 if __name__ == "__main__":
-    # test = socket_control('169.254.208.100', 5025)
-    test = socket_control('169.254.208.101', 5025)
-    # test = socket_control('192.168.68.109', 5025)
+    test = socket_control('169.254.208.100', 5025)
+    # test = socket_control('169.254.208.101', 5025)
+    # test = socket_control('192.168.68.122', 5025)
     print(test.is_connected)
 
     try:
@@ -250,9 +265,12 @@ if __name__ == "__main__":
         sleep(0.5)
         print(test.is_connected)
         # test.send('syst:ip 169.254.208.101')
-        print(test.send('STS?'))
         # print(test.send('STS?'))
-        sleep(3)
+        # while True:
+        print(test.send('GET'))
+            # sleep(0.1)
+        print(test.send('STS?'))
+        # sleep(3)
 
     finally:
         test.close()
