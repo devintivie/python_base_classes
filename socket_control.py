@@ -53,6 +53,42 @@ class socket_control:
             pass
         finally:
             self.connection_status = connection_status.closed
+
+    def send_bytes(self, byte_string, toLog = False, delay = 0, receive = True):
+        if self.is_connected :
+            if version == 3 :
+                try:
+                    self._socket.send(byte_string)
+                except socket.timeout as stex:
+                    self.close()
+                    self.connection_status = connection_status.timeout
+                    return stex.strerror
+                except ConnectionResetError:
+                    self.close()
+                    self.connection_status = connection_status.connection_reset
+                    return self.connection_status.value
+                sleep(delay)
+                
+                if receive:
+#                    print(f'[send debug] if receive = {receive}')
+                    return self.receive_bytes()
+                else:
+                    return 'no receive'
+            else:
+                try:
+                    self._socket.send(byte_string)
+                except socket.timeout as stex:
+                    self.close()
+                    self.connection_status = connection_status.timeout
+                    return stex.strerror
+                sleep(delay)
+                if receive:
+                    return self.receive_bytes()
+                else:
+                    return 'no receive'
+
+        self.connection_status = connection_status.closed
+        return self.connection_status.value
         
     def send(self, String, toLog = False, delay = 0, receive = True):
         byte_string = bytes(String, encoding = 'utf-8')
@@ -127,6 +163,16 @@ class socket_control:
 
     def receive(self, MaxBytes=2048):
         if self.is_connected:
+            byte_string =  self.receive_bytes(MaxBytes)
+            String = str(byte_string, encoding='utf-8')
+            String = String.replace('\r','').replace('\n', '')
+            return String
+        self.connection_status = connection_status.closed
+        return self.connection_status.value
+        # return 'Not Connected'
+
+    def receive_bytes(self, MaxBytes=2048):
+        if self.is_connected:
             if version == 3:
                 try:
                     byte_string = self._socket.recv(MaxBytes)
@@ -139,9 +185,7 @@ class socket_control:
                     self.connection_status = connection_status.connection_reset
                     return self.connection_status.value
                     # byte_string = b'connection reset'
-                String = str(byte_string, encoding='utf-8')
-                String = String.replace('\r','').replace('\n', '')
-                return String
+                return byte_string
             else:
                 try:
                     byte_string = self._socket.recv(MaxBytes)
@@ -153,10 +197,7 @@ class socket_control:
                     self.close()
                     self.connection_status = connection_status.connection_reset
                     return self.connection_status.value
-                    # byte_string = b'connection reset'
-                String = str(byte_string, encoding='utf-8')
-                String = String.replace('\r','').replace('\n', '')
-                return String
+                return byte_string
         self.connection_status = connection_status.closed
         return self.connection_status.value
         # return 'Not Connected'
@@ -240,19 +281,20 @@ class connection_status(enum.Enum):
 
 
 if __name__ == "__main__":
-    # test = socket_control('169.254.208.100', 5025)
-    test = socket_control('169.254.208.101', 5025)
+    test = socket_control('169.254.208.100', 5025)
+    # test = socket_control('169.254.208.101', 5025)
     # test = socket_control('192.168.68.109', 5025)
+    # test = socket_control('192.168.68.135', 80)
     print(test.is_connected)
 
     try:
         test.connect()
-        sleep(0.5)
+        # sleep(0.5)
         print(test.is_connected)
         # test.send('syst:ip 169.254.208.101')
         print(test.send('STS?'))
         # print(test.send('STS?'))
-        sleep(3)
+        # sleep(3)
 
     finally:
         test.close()
