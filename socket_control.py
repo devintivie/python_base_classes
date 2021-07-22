@@ -281,20 +281,25 @@ class connection_status(enum.Enum):
 
 
 if __name__ == "__main__":
-    test = socket_control('169.254.208.100', 5025)
+    # test = socket_control('169.254.208.100', 5025)
     # test = socket_control('169.254.208.101', 5025)
     # test = socket_control('192.168.68.109', 5025)
     # test = socket_control('192.168.68.135', 80)
+    test = socket_control('151.1.10.10', 10027)
     print(test.is_connected)
 
     try:
         test.connect()
+        while(True):
+            if not test.is_connected:
+                break
         # sleep(0.5)
-        print(test.is_connected)
-        # test.send('syst:ip 169.254.208.101')
-        print(test.send('STS?'))
+            print(test.is_connected)
+            # test.send('syst:ip 169.254.208.101')
+            print(test.send_bytes(b'jdhjdf', receive=False))
         # print(test.send('STS?'))
         # sleep(3)
+            sleep(0.5)
 
     finally:
         test.close()
