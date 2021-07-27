@@ -290,16 +290,16 @@ if __name__ == "__main__":
 
     try:
         test.connect()
-        while(True):
-            if not test.is_connected:
-                break
-        # sleep(0.5)
-            print(test.is_connected)
-            # test.send('syst:ip 169.254.208.101')
-            print(test.send_bytes(b'jdhjdf', receive=False))
+        # while(True):
+        #     if not test.is_connected:
+        #         break
+            # sleep(0.5)
+        print(test.is_connected)
+        # test.send('syst:ip 169.254.208.101')
+        print(test.send_bytes(b"\x05\x00\xa5\x01\x02\x03\x04\x05\x06\x07\x08\x09", receive=False))
         # print(test.send('STS?'))
         # sleep(3)
-            sleep(0.5)
+        sleep(0.5)
 
     finally:
         test.close()
