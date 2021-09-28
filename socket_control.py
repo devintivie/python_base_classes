@@ -284,22 +284,23 @@ if __name__ == "__main__":
     # test = socket_control('169.254.208.100', 5025)
     # test = socket_control('169.254.208.101', 5025)
     # test = socket_control('192.168.68.109', 5025)
-    # test = socket_control('192.168.68.135', 80)
-    test = socket_control('151.1.10.10', 10027)
+    test = socket_control('151.1.1.179', 9500)
+    # test = socket_control('151.1.10.10', 10027)
     print(test.is_connected)
 
     try:
         test.connect()
-        # while(True):
-        #     if not test.is_connected:
-        #         break
+        while(True):
+            if not test.is_connected:
+                break
             # sleep(0.5)
-        print(test.is_connected)
-        # test.send('syst:ip 169.254.208.101')
-        print(test.send_bytes(b"\x05\x00\xa5\x01\x02\x03\x04\x05\x06\x07\x08\x09", receive=False))
-        # print(test.send('STS?'))
-        # sleep(3)
-        sleep(0.5)
+            print(test.is_connected)
+            # test.send('syst:ip 169.254.208.101')
+            resp = test.send("$016\r", receive=True)#\x00\xa5\x01\x02\x03\x04\x05\x06\x07\x08\x09", receive=True)
+            print(f'resp = {resp}')
+            # print(test.send('STS?'))
+            # sleep(3)
+            sleep(0.5)
 
     finally:
         test.close()
