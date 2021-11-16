@@ -14,6 +14,7 @@ version = sys.version_info[0]
 
 class socket_control:
     def __init__(self, iAddr, iPort = 5025):
+        self._socket = None
         self.ip_address = iAddr
         self.port = iPort
         self.connection_status = connection_status.idle
@@ -292,7 +293,7 @@ if __name__ == "__main__":
         # sleep(0.5)
         print(test.is_connected)
         # test.send('syst:ip 169.254.208.101')
-        print(test.send('STS?'))
+        print(test.send('sys:firm?'))
         # print(test.send('STS?'))
         # sleep(3)
 
