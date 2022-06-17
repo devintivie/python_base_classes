@@ -14,6 +14,7 @@ version = sys.version_info[0]
 
 class socket_control:
     def __init__(self, iAddr, iPort = 5025):
+        self._socket = None
         self.ip_address = iAddr
         self.port = iPort
         self.connection_status = connection_status.idle
@@ -54,7 +55,6 @@ class socket_control:
         finally:
             self.connection_status = connection_status.closed
 
-    '''send bytes'''
     def send_bytes(self, byte_string, toLog = False, delay = 0, receive = True):
         if self.is_connected :
             if version == 3 :
@@ -86,59 +86,48 @@ class socket_control:
                 if receive:
                     return self.receive_bytes()
                 else:
-                    return b'Nothing to Receive'
+                    return 'no receive'
 
         self.connection_status = connection_status.closed
         return self.connection_status.value
         
-    '''send string'''
     def send(self, String, toLog = False, delay = 0, receive = True):
         byte_string = bytes(String, encoding = 'utf-8')
-        response = self.send_bytes(byte_string, toLog=toLog, delay=delay, receive=receive)
-        String = str(response, encoding='utf-8')
-        String = String.replace('\r','').replace('\n', '')
-        return String
-
-
-
-
-#     def send(self, String, toLog = False, delay = 0, receive = True):
-#         byte_string = bytes(String, encoding = 'utf-8')
-# #        print(f'[send debug] command={String} : receive = {receive}')
-#         if self.is_connected :
-#             if version == 3 :
-#                 try:
-#                     self._socket.send(byte_string)
-#                 except socket.timeout as stex:
-#                     self.close()
-#                     self.connection_status = connection_status.timeout
-#                     return stex.strerror
-#                 except ConnectionResetError:
-#                     self.close()
-#                     self.connection_status = connection_status.connection_reset
-#                     return self.connection_status.value
-#                 sleep(delay)
+#        print(f'[send debug] command={String} : receive = {receive}')
+        if self.is_connected :
+            if version == 3 :
+                try:
+                    self._socket.send(byte_string)
+                except socket.timeout as stex:
+                    self.close()
+                    self.connection_status = connection_status.timeout
+                    return stex.strerror
+                except ConnectionResetError:
+                    self.close()
+                    self.connection_status = connection_status.connection_reset
+                    return self.connection_status.value
+                sleep(delay)
                 
-#                 if receive:
-# #                    print(f'[send debug] if receive = {receive}')
-#                     return self.receive()
-#                 else:
-#                     return 'no receive'
-#             else:
-#                 try:
-#                     self._socket.send(String)
-#                 except socket.timeout as stex:
-#                     self.close()
-#                     self.connection_status = connection_status.timeout
-#                     return stex.strerror
-#                 sleep(delay)
-#                 if receive:
-#                     return self.receive()
-#                 else:
-#                     return 'no receive'
+                if receive:
+#                    print(f'[send debug] if receive = {receive}')
+                    return self.receive()
+                else:
+                    return 'no receive'
+            else:
+                try:
+                    self._socket.send(String)
+                except socket.timeout as stex:
+                    self.close()
+                    self.connection_status = connection_status.timeout
+                    return stex.strerror
+                sleep(delay)
+                if receive:
+                    return self.receive()
+                else:
+                    return 'no receive'
 
-#         self.connection_status = connection_status.closed
-#         return self.connection_status.value
+        self.connection_status = connection_status.closed
+        return self.connection_status.value
 
     def send_comm_layer(self, String, toLog = False, delay = 0):
         byte_string = bytes(String, encoding = 'utf-8')
@@ -173,12 +162,15 @@ class socket_control:
         return self.connection_status.value
         # return 'Not Connected'
 
-    '''receive string'''
     def receive(self, MaxBytes=2048):
-        byte_string =  self.receive_bytes(MaxBytes)
-        String = str(byte_string, encoding='utf-8')
-        String = String.replace('\r','').replace('\n', '')
-        return String
+        if self.is_connected:
+            byte_string =  self.receive_bytes(MaxBytes)
+            String = str(byte_string, encoding='utf-8')
+            String = String.replace('\r','').replace('\n', '')
+            return String
+        self.connection_status = connection_status.closed
+        return self.connection_status.value
+        # return 'Not Connected'
 
     def receive_bytes(self, MaxBytes=2048):
         if self.is_connected:
@@ -261,17 +253,17 @@ class socket_control:
 
 
 class connection_status(enum.Enum):
-    idle = b'Idle'
-    connecting = b'Connecting'
-    connected = b'Connected'
-    canceled = b'Canceled'
-    closed = b'Closed'
-    timeout = b'Timeout'
-    socket_error = b'Socket Error'
-    bad_port = b'Bad Port',
-    connection_reset = b'Connection Reset'
-    refused = b'Connection Refused'
-    ping_failed = b'Ping Failed'
+    idle = 'Idle'
+    connecting = 'Connecting'
+    connected = 'Connected'
+    canceled = 'Canceled'
+    closed = 'Closed'
+    timeout = 'Timeout'
+    socket_error = 'Socket Error'
+    bad_port = 'Bad Port',
+    connection_reset = 'Connection Reset'
+    refused = 'Connection Refused'
+    ping_failed = 'Ping Failed'
     
 
 # connection_strings = dict(
@@ -292,32 +284,30 @@ class connection_status(enum.Enum):
 if __name__ == "__main__":
     # test = socket_control('169.254.208.100', 5025)
     # test = socket_control('169.254.208.101', 5025)
-    # for i in range(500):
-    test = socket_control('151.1.10.12', 9760)
-    # test = socket_control('151.1.1.236', 9760)
-    # test = socket_control('151.1.1.179', 9500)
+    # test = socket_control('192.168.68.109', 5025)
+    test = socket_control('151.1.1.179', 9500)
     # test = socket_control('151.1.10.10', 10027)
     print(test.is_connected)
 
     try:
         test.connect()
-        resp = test.send(':IDN?\n')
-        print(resp)
-
-        resp = test.send(':TEMP?\n')
-        print(resp)
-        # if 'Closed' not in resp:
-        # while(True):
-        #     if not test.is_connected:
-        #         break
-        #     # sleep(0.5)
-        #     print(test.is_connected)
-        #     # test.send('syst:ip 169.254.208.101')
-        #     resp = test.send("$016\r", receive=True)#\x00\xa5\x01\x02\x03\x04\x05\x06\x07\x08\x09", receive=True)
-        #     print(f'resp = {resp}')
-        #     # print(test.send('STS?'))
-        #     # sleep(3)
-        #     sleep(0.5)
+        # sleep(0.5)
+        print(test.is_connected)
+        # test.send('syst:ip 169.254.208.101')
+        print(test.send('sys:firm?'))
+        # print(test.send('STS?'))
+        # sleep(3)
+        while(True):
+            if not test.is_connected:
+                break
+            # sleep(0.5)
+            print(test.is_connected)
+            # test.send('syst:ip 169.254.208.101')
+            resp = test.send("$016\r", receive=True)#\x00\xa5\x01\x02\x03\x04\x05\x06\x07\x08\x09", receive=True)
+            print(f'resp = {resp}')
+            # print(test.send('STS?'))
+            # sleep(3)
+            sleep(0.5)
 
     finally:
         test.close()
