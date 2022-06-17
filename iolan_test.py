@@ -9,6 +9,7 @@ class iolan_test(socket_control):
 if __name__ == "__main__":
     test = iolan_test('151.1.10.10', 10002)
     print(test.is_connected)
+    ID_COMMAND = 0x2
     WRITE_COMMAND = 0x5
     READ_COMMAND = 0x4
 
@@ -17,12 +18,15 @@ if __name__ == "__main__":
         sleep(0.5)
         #Concatenate Address byte
         header = bytearray([0xff, 0xa5])
-        write_address = 0x10
+        write_address = 0x00
         write_data = 100
-        data_packet = bytearray([write_address, write_data])
-        chassis_address = 1  # might be omitted now
-        module_address = 8  # slot address I believe
-        address = (chassis_address & 0xf0) + (module_address & 0x0f)
+        # data_packet = bytearray([write_address, write_data])
+        data_packet = bytearray()#[write_address, write_data])
+        # chassis_address = 1  # might be omitted now
+        module_address = 0  # slot address I believe
+        
+        # address = (chassis_address & 0xf0) + (module_address & 0x0f)
+        address = module_address & 0x0f
         length = len(data_packet) + 2 #Length is Data length + 2
 
         #create full array
@@ -30,9 +34,9 @@ if __name__ == "__main__":
         # full_array.append()
         full_array.append(address)
         full_array.append(length)
-        full_array.append(WRITE_COMMAND)
-        for d in data_packet:
-            full_array.append(d)
+        full_array.append(ID_COMMAND)
+        # for d in data_packet:
+        #     full_array.append(d)
             
         #0x7a
         check_length = length + 1
@@ -44,10 +48,39 @@ if __name__ == "__main__":
         full_array.append(check_sum)
 
         print(f'{hex(check_sum)}')
-        resp = test.send_bytes(full_array, receive=True)
-        for x in resp:
-            print(hex(x))
+
+        for i in range(4):
+            print(f'sent {i+1}')
+            resp = test.send_bytes(full_array, delay=0.25, receive=True)
+            try:
+                for x in resp:
+                    print(x)
+            except:
+                print(resp)
+
+        # print('sent')
+        # resp = test.send_bytes(full_array, receive=True)
+        # try:
+        #     for x in resp:
+        #         print(x)
+        # except:
+        #     print(resp)
+
+        # print('sent')
+        # resp = test.send_bytes(full_array, receive=True)
+        # try:
+        #     for x in resp:
+        #         print(x)
+        # except:
+        #     print(resp)
         # calc_check = aggregate
+        print('remainder')
+        resp = test.receive()
+        try:
+            for x in resp:
+                print(x)
+        except:
+            print(resp)
 
     except Exception as ex:
         print(ex)
